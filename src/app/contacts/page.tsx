@@ -1,183 +1,183 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-interface Contact {
-    id: string;
-    phone: string;
-    name: string;
-    country: string;
-    temperature: "nuevo" | "tibio" | "caliente" | "cliente" | "bloqueado";
-    lastMessage: string;
-    lastInteraction: string;
-    meetingScheduled: boolean;
-    blocked: boolean;
+interface Lead {
+  rowNumber: number;
+  nombre: string;
+  telefono: string;
+  email: string;
+  pais: string;
+  fecha: string;
+  agendoDemo: string;
+  fechaDemo: string;
+  linkCalendly: string;
+}
+
+interface LeadsData {
+  leads: Lead[];
+  total: number;
+  conDemo: number;
+  pendientes: number;
+  conTelefono: number;
+  error?: string;
 }
 
 export default function ContactsPage() {
-    const [contacts, setContacts] = useState<Contact[]>([]);
-    const [filter, setFilter] = useState<string>("all");
-    const [search, setSearch] = useState<string>("");
-    const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<LeadsData>({ leads: [], total: 0, conDemo: 0, pendientes: 0, conTelefono: 0 });
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Simulated data - will connect to Google Sheets
-        setTimeout(() => {
-            setContacts([
-                { id: "1", phone: "+56912345678", name: "María García", country: "Chile", temperature: "caliente", lastMessage: "¡Me interesa el curso!", lastInteraction: "Hace 5 min", meetingScheduled: true, blocked: false },
-                { id: "2", phone: "+52155512345", name: "Carlos López", country: "México", temperature: "tibio", lastMessage: "Cuánto cuesta?", lastInteraction: "Hace 1 hora", meetingScheduled: false, blocked: false },
-                { id: "3", phone: "+573001234567", name: "Ana Martínez", country: "Colombia", temperature: "cliente", lastMessage: "Gracias por todo!", lastInteraction: "Hace 2 días", meetingScheduled: false, blocked: false },
-                { id: "4", phone: "+56998765432", name: "Pedro Sánchez", country: "Chile", temperature: "nuevo", lastMessage: "Hola, quiero info", lastInteraction: "Hace 10 min", meetingScheduled: false, blocked: false },
-                { id: "5", phone: "+51987654321", name: "Laura Díaz", country: "Perú", temperature: "caliente", lastMessage: "Mi hijo tiene 10 años", lastInteraction: "Hace 30 min", meetingScheduled: true, blocked: false },
-                { id: "6", phone: "+56911111111", name: "Spam User", country: "Chile", temperature: "bloqueado", lastMessage: "bitcoin crypto", lastInteraction: "Hace 3 días", meetingScheduled: false, blocked: true },
-            ]);
-            setLoading(false);
-        }, 300);
-    }, []);
-
-    const getTempBadge = (temp: string) => {
-        switch (temp) {
-            case "caliente": return "badge badge-hot";
-            case "tibio": return "badge badge-warm";
-            case "nuevo": return "badge badge-new";
-            case "cliente": return "badge badge-customer";
-            case "bloqueado": return "badge badge-blocked";
-            default: return "badge badge-cold";
-        }
-    };
-
-    const getTempLabel = (temp: string) => {
-        switch (temp) {
-            case "caliente": return "🔥 Caliente";
-            case "tibio": return "🌡️ Tibio";
-            case "nuevo": return "🆕 Nuevo";
-            case "cliente": return "⭐ Cliente";
-            case "bloqueado": return "🚫 Bloqueado";
-            default: return temp;
-        }
-    };
-
-    const filteredContacts = contacts.filter((c) => {
-        const matchesFilter = filter === "all" || c.temperature === filter;
-        const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-            c.phone.includes(search);
-        return matchesFilter && matchesSearch;
-    });
-
-    const toggleBlock = (id: string) => {
-        setContacts(contacts.map(c => {
-            if (c.id === id) {
-                return {
-                    ...c,
-                    blocked: !c.blocked,
-                    temperature: c.blocked ? "nuevo" : "bloqueado"
-                };
-            }
-            return c;
-        }));
-    };
-
-    if (loading) {
-        return <div className="flex items-center justify-center h-96"><div className="text-gray-400">Cargando...</div></div>;
+  const fetchLeads = useCallback(async () => {
+    try {
+      const res = await fetch("/api/contacts", { cache: "no-store" });
+      const json = await res.json();
+      setData(json);
+    } catch {
+      // keep state
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  useEffect(() => {
+    fetchLeads();
+    const iv = setInterval(fetchLeads, 60000);
+    return () => clearInterval(iv);
+  }, [fetchLeads]);
+
+  const filtered = data.leads.filter((l) => {
+    const matchFilter =
+      filter === "all" ||
+      (filter === "demo" && l.agendoDemo === "SI") ||
+      (filter === "pendiente" && l.agendoDemo !== "SI") ||
+      (filter === "conTel" && !!l.telefono);
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      l.nombre.toLowerCase().includes(q) ||
+      l.email.toLowerCase().includes(q) ||
+      l.telefono.includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  const tabs = [
+    { key: "all", label: `Todos (${data.total})` },
+    { key: "demo", label: `Demo (${data.conDemo})` },
+    { key: "pendiente", label: `Pendientes (${data.pendientes})` },
+    { key: "conTel", label: `Con teléfono (${data.conTelefono})` },
+  ];
+
+  if (loading) {
     return (
-        <div>
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Contactos</h1>
-                    <p className="text-gray-400">Gestiona tus leads y clientes</p>
-                </div>
-                <button className="btn btn-primary">➕ Nuevo Contacto</button>
-            </div>
-
-            {/* Filters */}
-            <div className="card mb-6">
-                <div className="flex flex-wrap gap-4 items-center">
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre o teléfono..."
-                        className="search-input flex-1 min-w-64"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                    <select
-                        className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                    >
-                        <option value="all">Todos</option>
-                        <option value="nuevo">Nuevos</option>
-                        <option value="tibio">Tibios</option>
-                        <option value="caliente">Calientes</option>
-                        <option value="cliente">Clientes</option>
-                        <option value="bloqueado">Bloqueados</option>
-                    </select>
-                </div>
-            </div>
-
-            {/* Contacts Table */}
-            <div className="card">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Contacto</th>
-                            <th>País</th>
-                            <th>Estado</th>
-                            <th>Último Mensaje</th>
-                            <th>Reunión</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredContacts.map((contact) => (
-                            <tr key={contact.id}>
-                                <td>
-                                    <div>
-                                        <p className="font-medium">{contact.name}</p>
-                                        <p className="text-sm text-gray-500">{contact.phone}</p>
-                                    </div>
-                                </td>
-                                <td>{contact.country}</td>
-                                <td>
-                                    <span className={getTempBadge(contact.temperature)}>
-                                        {getTempLabel(contact.temperature)}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div>
-                                        <p className="text-sm truncate max-w-48">{contact.lastMessage}</p>
-                                        <p className="text-xs text-gray-500">{contact.lastInteraction}</p>
-                                    </div>
-                                </td>
-                                <td>
-                                    {contact.meetingScheduled ? (
-                                        <span className="text-green-400">📅 Agendada</span>
-                                    ) : (
-                                        <span className="text-gray-500">-</span>
-                                    )}
-                                </td>
-                                <td>
-                                    <div className="flex gap-2">
-                                        <button className="btn btn-outline text-xs px-2 py-1">💬 Chat</button>
-                                        <button
-                                            className={`btn text-xs px-2 py-1 ${contact.blocked ? "btn-success" : "btn-danger"}`}
-                                            onClick={() => toggleBlock(contact.id)}
-                                        >
-                                            {contact.blocked ? "✓ Desbloquear" : "🚫 Bloquear"}
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-
-                {filteredContacts.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                        No se encontraron contactos
-                    </div>
-                )}
-            </div>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-gray-400 animate-pulse">Cargando leads desde Google Sheets...</div>
+      </div>
     );
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Contactos</h1>
+          <p className="text-gray-400">Leads registrados desde Calendly · {data.total} únicos</p>
+        </div>
+        <button onClick={fetchLeads} className="btn btn-outline text-sm">
+          ↻ Actualizar
+        </button>
+      </div>
+
+      {/* Summary bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {[
+          { label: "Total leads", value: data.total, color: "border-blue-700/50 bg-blue-900/20", text: "text-blue-400" },
+          { label: "Demo agendada", value: data.conDemo, color: "border-green-700/50 bg-green-900/20", text: "text-green-400" },
+          { label: "Pendientes", value: data.pendientes, color: "border-yellow-700/50 bg-yellow-900/20", text: "text-yellow-400" },
+          { label: "Con teléfono", value: data.conTelefono, color: "border-purple-700/50 bg-purple-900/20", text: "text-purple-400" },
+        ].map((s) => (
+          <div key={s.label} className={`rounded-xl p-4 border ${s.color}`}>
+            <p className={`text-2xl font-bold ${s.text}`}>{s.value}</p>
+            <p className="text-xs text-gray-400 mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="Buscar por nombre, email o teléfono..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="search-input w-full mb-4"
+      />
+
+      {/* Filter tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setFilter(t.key)}
+            className={`btn text-sm ${filter === t.key ? "btn-primary" : "btn-outline"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lead list */}
+      {filtered.length === 0 ? (
+        <div className="card text-center py-12 text-gray-500">
+          No hay contactos que coincidan
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((lead) => (
+            <div key={lead.rowNumber} className="card !p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300 flex-shrink-0">
+                  {(lead.nombre.charAt(0) || "?").toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{lead.nombre || "(sin nombre)"}</p>
+                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                    {lead.email && <span className="text-xs text-gray-400 truncate">{lead.email}</span>}
+                    {lead.telefono && <span className="text-xs text-green-400 font-mono">{lead.telefono}</span>}
+                    {lead.pais && <span className="text-xs text-gray-500">{lead.pais}</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs text-gray-500">{lead.fecha}</p>
+                  {lead.fechaDemo && <p className="text-xs text-purple-400">Demo: {lead.fechaDemo}</p>}
+                </div>
+
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                  lead.agendoDemo === "SI"
+                    ? "bg-green-600/30 text-green-400 border border-green-700/40"
+                    : "bg-yellow-600/20 text-yellow-400 border border-yellow-700/30"
+                }`}>
+                  {lead.agendoDemo === "SI" ? "✓ Demo" : "⏳ Pendiente"}
+                </span>
+
+                {lead.telefono && (
+                  <a
+                    href={`https://wa.me/${lead.telefono.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-green-400 hover:text-green-300 text-xl"
+                    title="Abrir WhatsApp"
+                  >
+                    💬
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
