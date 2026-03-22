@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 const WORKFLOW_IDS = {
   bot: "iRu4ihRve7jB1Mm8",
   reminder: "vh5VuB7AFL8s3ya1",
+  postmeeting: "fRC6UjuPqGBpsjLY",
 };
 
 interface WorkflowStatus {
   bot: boolean;
   reminder: boolean;
+  postmeeting: boolean;
 }
 
 export default function SettingsPage() {
-  const [wfStatus, setWfStatus] = useState<WorkflowStatus>({ bot: false, reminder: false });
+  const [wfStatus, setWfStatus] = useState<WorkflowStatus>({ bot: false, reminder: false, postmeeting: false });
   const [wfLoading, setWfLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -36,6 +38,7 @@ export default function SettingsPage() {
       for (const wf of data.workflows || []) {
         if (wf.key === "bot") wfs.bot = wf.active;
         if (wf.key === "reminder") wfs.reminder = wf.active;
+        if (wf.key === "postmeeting") wfs.postmeeting = wf.active;
       }
       setWfStatus(wfs);
     } catch {
@@ -208,6 +211,51 @@ export default function SettingsPage() {
               <div className="flex items-start gap-2 text-gray-400">
                 <span className="text-green-400 mt-0.5">✓</span>
                 <span>No reenvía si ya fue enviado (sin duplicados)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Post-Reunión */}
+        <div className="card">
+          <h3 className="card-header">🌟 Post-Reunión: Reservar Cupo</h3>
+          <div className="space-y-5">
+
+            <div className="flex items-center justify-between p-4 bg-gray-700/40 rounded-xl">
+              <div>
+                <p className="font-medium">Mensaje Post-Reunión</p>
+                <p className="text-sm text-gray-500">
+                  {wfLoading ? "Verificando..." : wfStatus.postmeeting ? "Enviando WhatsApp al terminar cada sesión" : "Mensajes post-reunión detenidos"}
+                </p>
+              </div>
+              {wfLoading ? (
+                <div className="text-gray-600 animate-pulse">●●●</div>
+              ) : (
+                <Toggle
+                  enabled={wfStatus.postmeeting}
+                  onToggle={() => toggleWorkflow("postmeeting")}
+                  loading={toggling === "postmeeting"}
+                />
+              )}
+            </div>
+
+            <div className="p-4 rounded-xl bg-gray-700/30 border border-gray-700/50 space-y-2 text-sm">
+              <p className="text-gray-400 font-medium mb-2">Mensaje que se envía</p>
+              <div className="p-3 bg-gray-800/60 rounded-lg text-xs text-gray-300 leading-relaxed border border-gray-600/40">
+                🌟 <strong>¡Gracias por asistir a InnovaKids!</strong><br/><br/>
+                ¡Hola [nombre]! 🙌<br/><br/>
+                Fue un gusto compartir la sesión diagnóstica gratuita junto a <em>[hijo/a]</em> hoy...<br/><br/>
+                Si deseas <strong>asegurar su cupo</strong> para el próximo curso de IA:<br/>
+                👉 innovakidslatam.com/pagar?option=promo27<br/><br/>
+                ⚡ Los cupos son <strong>limitados</strong>
+              </div>
+              <div className="flex items-start gap-2 text-gray-400 mt-2">
+                <span className="text-green-400 mt-0.5">✓</span>
+                <span>Se envía 3-40 min después de que termina la sesión</span>
+              </div>
+              <div className="flex items-start gap-2 text-gray-400">
+                <span className="text-green-400 mt-0.5">✓</span>
+                <span>Solo una vez por evento (sin duplicados)</span>
               </div>
             </div>
           </div>

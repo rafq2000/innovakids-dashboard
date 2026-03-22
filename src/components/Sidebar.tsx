@@ -15,6 +15,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [botActive, setBotActive] = useState<boolean | null>(null);
   const [reminderActive, setReminderActive] = useState<boolean | null>(null);
+  const [postmeetingActive, setPostmeetingActive] = useState<boolean | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -23,6 +24,7 @@ export default function Sidebar() {
       for (const wf of data.workflows || []) {
         if (wf.key === "bot") setBotActive(wf.active);
         if (wf.key === "reminder") setReminderActive(wf.active);
+        if (wf.key === "postmeeting") setPostmeetingActive(wf.active);
       }
     } catch {
       /* ignore */
@@ -35,8 +37,8 @@ export default function Sidebar() {
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
-  const allActive = botActive && reminderActive;
-  const noneActive = botActive === false && reminderActive === false;
+  const allActive = botActive && reminderActive && postmeetingActive;
+  const noneActive = botActive === false && reminderActive === false && postmeetingActive === false;
 
   return (
     <aside className="sidebar">
@@ -110,6 +112,17 @@ export default function Sidebar() {
                 <span className={reminderActive ? "text-green-400 flex items-center gap-1" : "text-gray-500"}>
                   <span className={`w-1.5 h-1.5 rounded-full ${reminderActive ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
                   {reminderActive ? "Activo" : "Inactivo"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500">Post-Reunión</span>
+              {postmeetingActive === null ? (
+                <span className="text-gray-600 animate-pulse">●●●</span>
+              ) : (
+                <span className={postmeetingActive ? "text-green-400 flex items-center gap-1" : "text-gray-500"}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${postmeetingActive ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
+                  {postmeetingActive ? "Activo" : "Inactivo"}
                 </span>
               )}
             </div>

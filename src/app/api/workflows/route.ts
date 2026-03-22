@@ -7,6 +7,7 @@ const N8N_API_KEY =
 const WORKFLOWS = {
   bot: "iRu4ihRve7jB1Mm8",
   reminder: "vh5VuB7AFL8s3ya1",
+  postmeeting: "fRC6UjuPqGBpsjLY",
 };
 
 async function n8n(method: string, path: string) {
@@ -22,9 +23,10 @@ async function n8n(method: string, path: string) {
 
 export async function GET() {
   try {
-    const [bot, reminder] = await Promise.all([
+    const [bot, reminder, postmeeting] = await Promise.all([
       n8n("GET", `/workflows/${WORKFLOWS.bot}`),
       n8n("GET", `/workflows/${WORKFLOWS.reminder}`),
+      n8n("GET", `/workflows/${WORKFLOWS.postmeeting}`),
     ]);
 
     return NextResponse.json({
@@ -41,9 +43,17 @@ export async function GET() {
           id: WORKFLOWS.reminder,
           key: "reminder",
           name: "Recordatorio 1h Antes",
-          description: "Envía WhatsApp automático 1 hora antes de cada sesión",
+          description: "Envía WhatsApp con link Google Meet, 1 hora antes de la sesión",
           active: reminder.active,
           features: ["Corre cada 5 min", "Detecta sesiones en Google Calendar", "Evita duplicados"],
+        },
+        {
+          id: WORKFLOWS.postmeeting,
+          key: "postmeeting",
+          name: "Post-Reunión: Reservar Cupo",
+          description: "Envía WhatsApp de agradecimiento + link de reserva al terminar la sesión",
+          active: postmeeting.active,
+          features: ["Detecta sesiones terminadas", "Mensaje + link de pago", "Sin duplicados"],
         },
       ],
     });
