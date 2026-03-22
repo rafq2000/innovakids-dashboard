@@ -34,7 +34,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/workflows", { cache: "no-store" });
       const data = await res.json();
-      const wfs: WorkflowStatus = { bot: false, reminder: false };
+      const wfs: WorkflowStatus = { bot: false, reminder: false, postmeeting: false };
       for (const wf of data.workflows || []) {
         if (wf.key === "bot") wfs.bot = wf.active;
         if (wf.key === "reminder") wfs.reminder = wf.active;
