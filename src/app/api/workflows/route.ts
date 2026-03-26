@@ -6,8 +6,9 @@ const N8N_API_KEY =
 
 const WORKFLOWS = {
   bot: "iRu4ihRve7jB1Mm8",
-  reminder: "vh5VuB7AFL8s3ya1",
+  reminder: "3PKBl34Yr3bFdfcT",
   postmeeting: "fRC6UjuPqGBpsjLY",
+  content: "L00RaUF6QmIaZumK",
 };
 
 async function n8n(method: string, path: string) {
@@ -23,10 +24,11 @@ async function n8n(method: string, path: string) {
 
 export async function GET() {
   try {
-    const [bot, reminder, postmeeting] = await Promise.all([
+    const [bot, reminder, postmeeting, content] = await Promise.all([
       n8n("GET", `/workflows/${WORKFLOWS.bot}`),
       n8n("GET", `/workflows/${WORKFLOWS.reminder}`),
       n8n("GET", `/workflows/${WORKFLOWS.postmeeting}`),
+      n8n("GET", `/workflows/${WORKFLOWS.content}`).catch(() => ({ active: false })),
     ]);
 
     return NextResponse.json({
@@ -42,10 +44,10 @@ export async function GET() {
         {
           id: WORKFLOWS.reminder,
           key: "reminder",
-          name: "Recordatorio 1h Antes",
-          description: "Envía WhatsApp con link Google Meet, 1 hora antes de la sesión",
+          name: "Recordatorio CRON",
+          description: "Envía WhatsApp con link Google Meet antes de cada sesión",
           active: reminder.active,
-          features: ["Corre cada 5 min", "Detecta sesiones en Google Calendar", "Evita duplicados"],
+          features: ["Corre periódicamente", "Detecta sesiones en Google Calendar", "Evita duplicados"],
         },
         {
           id: WORKFLOWS.postmeeting,
@@ -54,6 +56,14 @@ export async function GET() {
           description: "Envía WhatsApp de agradecimiento + link de reserva al terminar la sesión",
           active: postmeeting.active,
           features: ["Detecta sesiones terminadas", "Mensaje + link de pago", "Sin duplicados"],
+        },
+        {
+          id: WORKFLOWS.content,
+          key: "content",
+          name: "Content Publisher (TikTok + IG)",
+          description: "Genera contenido automático para TikTok e Instagram con IA",
+          active: content.active,
+          features: ["Lun-Vie 10am", "Scripts TikTok + Captions IG", "Google Sheets calendar"],
         },
       ],
     });

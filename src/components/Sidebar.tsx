@@ -8,6 +8,7 @@ const navItems = [
   { href: "/contacts", label: "Contactos", icon: "👥" },
   { href: "/conversations", label: "Conversaciones", icon: "💬" },
   { href: "/meetings", label: "Reuniones", icon: "📅" },
+  { href: "/content", label: "Contenido", icon: "🎬" },
   { href: "/settings", label: "Configuración", icon: "⚙️" },
 ];
 
@@ -16,6 +17,7 @@ export default function Sidebar() {
   const [botActive, setBotActive] = useState<boolean | null>(null);
   const [reminderActive, setReminderActive] = useState<boolean | null>(null);
   const [postmeetingActive, setPostmeetingActive] = useState<boolean | null>(null);
+  const [contentActive, setContentActive] = useState<boolean | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -25,6 +27,7 @@ export default function Sidebar() {
         if (wf.key === "bot") setBotActive(wf.active);
         if (wf.key === "reminder") setReminderActive(wf.active);
         if (wf.key === "postmeeting") setPostmeetingActive(wf.active);
+        if (wf.key === "content") setContentActive(wf.active);
       }
     } catch {
       /* ignore */
@@ -123,6 +126,17 @@ export default function Sidebar() {
                 <span className={postmeetingActive ? "text-green-400 flex items-center gap-1" : "text-gray-500"}>
                   <span className={`w-1.5 h-1.5 rounded-full ${postmeetingActive ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
                   {postmeetingActive ? "Activo" : "Inactivo"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500">Contenido</span>
+              {contentActive === null ? (
+                <span className="text-gray-600 animate-pulse">●●●</span>
+              ) : (
+                <span className={contentActive ? "text-green-400 flex items-center gap-1" : "text-gray-500"}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${contentActive ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
+                  {contentActive ? "Activo" : "Inactivo"}
                 </span>
               )}
             </div>
